@@ -12,7 +12,7 @@ class Window(DTO):
         self.start_time = start_time
         self.end_time = end_time
         self.pivot_time = self.start_time
-        self.list_sub_jobs = []
+        self.assigned_jobs = []
 
     @property
     def remain_size(self):
@@ -26,14 +26,18 @@ class Window(DTO):
     def processed_time(self):
         return self.pivot_time - self.start_time
 
-    def check_insert_job(self, job):
+    def valid_insert_job(self, job):
         return job.p_time < self.remain_size
 
     def insert_job(self, job):
         job_time = job.p_time
         assert job_time <= self.remain_size
         self.pivot_time = self.pivot_time + job_time
-        self.list_sub_jobs.append(job)
+        self.assigned_jobs.append(job)
+
+    def reset(self):
+        self.assigned_jobs.clear()
+        self.pivot_time = self.start_time
 
 
 class Machine(DTO):
@@ -43,7 +47,26 @@ class Machine(DTO):
         self.split_min = split_min
 
     def get_processed_time(self):
+        # Viết lại hàm này, hơi sai sai
         return sum(window.processed_time for window in self.windows)
+
+    def get_processed_time_v2(self):
+        # Viết lại hàm này, hơi sai sai
+        # Viết hàm ưu tiên trả về khi một window còn dư nhiều hơn split_time
+        processed_time = 0
+        for window in self.windows:
+            if len(window.assigned_jobs) == 0:
+                break
+            if window.idle_time >= self.split_min:
+                processed_time = window.pivot_time
+                return processed_time
+            else:
+                processed_time = window.pivot_time
+        return processed_time
+
+    def reset(self):
+        for window in self.windows:
+            window.reset()
 
 
 class SubJob(DTO):
@@ -61,8 +84,8 @@ class Job(DTO):
 
         # processing
         self.start_time = 0
-        self.end_time = self.process_time
         self.pivot_time = self.start_time
+        self.end_time = self.process_time
 
         self.sub_jobs = []
 
@@ -95,6 +118,10 @@ class Job(DTO):
                 sub_job_ins.append(SubJob(p_time=sub_job_time))
             self._all_subjobs.append(sub_job_ins)
 
+    def reset(self):
+        self.sub_jobs.clear()
+        self.pivot_time = self.start_time
+
 
 class TWSPwJP(DTO):
     def __init__(self, jobs: List[Job], machines: List[Machine], split_min: int):
@@ -115,7 +142,7 @@ class TWSPwJP(DTO):
         # return with condition:
         # 1. machine has executed the job
         # 2. machine in machines with completion time is minimum
-        lst_processed_time = [machine.get_processed_time() for machine in self.machines]
+        lst_processed_time = [machine.get_processed_time_v2() for machine in self.machines]
         min_idx = np.argmin(np.array(lst_processed_time)).item()
         return self.machines[min_idx]
 
@@ -139,3 +166,9 @@ class TWSPwJP(DTO):
                             # Assign job Ji with the size (job.remain_time - self.split_min) into current window
                             sub_job = job.create_sub_job(job.remain_time - self.split_min, machine)
                             window.insert_job(sub_job)
+
+    def reset(self):
+        for machine in self.machines:
+            machine.reset()
+        for job in self.jobs:
+            job.reset()
