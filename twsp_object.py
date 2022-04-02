@@ -27,12 +27,11 @@ class Window(DTO):
         return self.pivot_time - self.start_time
 
     def valid_insert_job(self, job):
-        return job.p_time < self.remain_size
+        return job.p_time <= self.remain_size
 
     def insert_job(self, job):
-        job_time = job.p_time
-        assert job_time <= self.remain_size
-        self.pivot_time = self.pivot_time + job_time
+        assert self.valid_insert_job(job)
+        self.pivot_time = self.pivot_time + job.p_time
         self.assigned_jobs.append(job)
 
     def reset(self):
@@ -41,17 +40,17 @@ class Window(DTO):
 
 
 class Machine(DTO):
-    def __init__(self, num_wins: int, windows: List[Window], split_min: int):
+    def __init__(self, num_wins: int, windows: List[Window], split_min: int, machine_name: str):
         self.num_wins = num_wins
         self.windows = windows
         self.split_min = split_min
+        self.machine_name = machine_name
 
     def get_processed_time(self):
         # Viết lại hàm này, hơi sai sai
         return sum(window.processed_time for window in self.windows)
 
     def get_processed_time_v2(self):
-        # Viết lại hàm này, hơi sai sai
         # Viết hàm ưu tiên trả về khi một window còn dư nhiều hơn split_time
         processed_time = 0
         for window in self.windows:
@@ -70,17 +69,18 @@ class Machine(DTO):
 
 
 class SubJob(DTO):
-    def __init__(self, p_time, status: bool = False, owner: Machine = None):
+    def __init__(self, p_time, parent_name: str = '', owner: Machine = None):
         self.p_time = p_time
-        self.status = status
+        self.parent_name = parent_name
         self.owner = owner
 
 
 class Job(DTO):
-    def __init__(self, process_time: int, split_min: int, owner: Machine = None):
+    def __init__(self, process_time: int, split_min: int, job_name: str = "", owner: Machine = None):
         self.process_time = process_time
         self.split_min = split_min
-        self.owner = owner
+        self._owner = owner
+        self.job_name = job_name
 
         # processing
         self.start_time = 0
@@ -94,17 +94,39 @@ class Job(DTO):
         return self.end_time - self.pivot_time
 
     @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, own):
+        if self._owner is not None:
+            assert isinstance(own, Machine)
+            assert self._owner.machine_name == own.machine_name
+        else:
+            self._owner = own
+
+    @property
     def splited_job(self):
         return len(self.sub_jobs) > 1
 
     @property
     def completion_time(self):
-        # TODO
-        return 0
+        compl_time = 0
+        if self.owner is None:
+            return compl_time
+        for window in self.owner.windows:
+            exed_time = window.start_time
+            for sub_job in window.assigned_jobs:
+                exed_time = exed_time + sub_job.p_time
+                if sub_job.parent_name == self.job_name:
+                    compl_time = exed_time
+
+        return compl_time
 
     def create_sub_job(self, p_time, machine):
         assert p_time <= self.remain_time
-        sub_job = SubJob(p_time=p_time, owner=None)
+        self.owner = machine
+        sub_job = SubJob(p_time=p_time, parent_name=self.job_name, owner=machine)
         self.pivot_time = self.pivot_time + p_time
         self.sub_jobs.append(sub_job)
         return sub_job
@@ -115,12 +137,13 @@ class Job(DTO):
         for comb_jobs in all_sub_jobs:
             sub_job_ins = []
             for sub_job_time in comb_jobs:
-                sub_job_ins.append(SubJob(p_time=sub_job_time))
+                sub_job_ins.append(SubJob(p_time=sub_job_time, parent_name=self.job_name))
             self._all_subjobs.append(sub_job_ins)
 
     def reset(self):
         self.sub_jobs.clear()
         self.pivot_time = self.start_time
+        self._owner = None
 
 
 class TWSPwJP(DTO):
