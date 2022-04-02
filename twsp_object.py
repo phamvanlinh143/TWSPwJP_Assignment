@@ -46,6 +46,11 @@ class Machine(DTO):
         self.split_min = split_min
         self.machine_name = machine_name
 
+    @property
+    def total_idle_time(self):
+        assert len(self.windows) > 1
+        return sum([window.idle_time for window in self.windows[:-1]])
+
     def get_processed_time(self):
         # Viết lại hàm này, hơi sai sai
         return sum(window.processed_time for window in self.windows)
@@ -69,10 +74,10 @@ class Machine(DTO):
 
 
 class SubJob(DTO):
-    def __init__(self, p_time, parent_name: str = '', owner: Machine = None):
+    def __init__(self, p_time, parent_name: str = '', owner_name: str = ''):
         self.p_time = p_time
         self.parent_name = parent_name
-        self.owner = owner
+        self.owner_name = owner_name
 
 
 class Job(DTO):
@@ -126,7 +131,7 @@ class Job(DTO):
     def create_sub_job(self, p_time, machine):
         assert p_time <= self.remain_time
         self.owner = machine
-        sub_job = SubJob(p_time=p_time, parent_name=self.job_name, owner=machine)
+        sub_job = SubJob(p_time=p_time, parent_name=self.job_name, owner_name=machine.machine_name)
         self.pivot_time = self.pivot_time + p_time
         self.sub_jobs.append(sub_job)
         return sub_job
