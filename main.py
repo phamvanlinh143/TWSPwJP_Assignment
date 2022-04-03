@@ -18,7 +18,7 @@ def parse_dataset(json_path):
     for machine in data['Machines']:
         lst_window = []
         for idx, window in enumerate(machine['Windows']):
-            if window['Capacity'] >= INF_TIME:
+            if window['StartTime']+window['Capacity'] >= INF_TIME:
                 window_obj = Window(index=idx+1, start_time=window['StartTime'], end_time=INF_TIME)
             else:
                 window_obj = Window(index=idx+1, start_time=window['StartTime'], end_time=window['StartTime']+window['Capacity'])
