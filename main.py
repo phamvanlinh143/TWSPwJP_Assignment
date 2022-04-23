@@ -1,6 +1,6 @@
 from twsp_object import TWSPwJP
 from twsp_object import Job, Window, Machine, INF_TIME
-from utils import load_json_data
+from utils import load_json_data, visualize
 
 
 def parse_dataset(json_path):
@@ -58,6 +58,7 @@ def run():
         print(machine.machine_name)
         for window in machine.windows:
             print(window)
+    visualize(solver.machines, lst_jobs, image_name='input_10_2_3_5')
     solver.reset()
 
 
