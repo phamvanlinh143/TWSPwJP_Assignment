@@ -1,9 +1,9 @@
 from twsp_object import TWSPwJP
 from twsp_object import Job, Window, Machine, INF_TIME
-from utils import load_json_data
 import os
 import sys
 import time
+from utils import load_json_data, visualize
 
 out = sys.stdout
 
@@ -37,16 +37,13 @@ def run(file: str):
     with open(file.split('/')[-2] + ".txt", 'a') as f:
         sys.stdout = f
         split_min, lst_jobs, lst_machines = parse_dataset(file)
-        # for job in lst_jobs:
-        #     print(job)
-        # for machine in lst_machines:
-        #     print(machine)
-
-        print(f"Split min: {split_min}")
+        for job in lst_jobs:
+            print(job)
+        for machine in lst_machines:
+            print(machine)
 
         solver = TWSPwJP(jobs=lst_jobs, machines=lst_machines, split_min=split_min)
         print(f"Lower Bound = {solver.LB}")
-        lower_bound = solver.LB
 
         start_time = time.time()
         solver.solve()
@@ -60,17 +57,16 @@ def run(file: str):
         print("=" * 80)
         solver.hill_climbing(limit_time=60)
         print(f"Hill Climbing Cmax = {solver.cmax}")
-        # print(f"{solver.cmax / lower_bound}")
         solver.reset()
         print("=" * 80)
         solver.local_beam_search(limit_time=60, beam_width=5)
         print(f"Local Beam Search Cmax = {solver.cmax}")
-        # print(f"{solver.cmax / lower_bound}")
         print("=" * 80)
-        # for machine in solver.machines:
-        #     print(machine.machine_name)
-        #     for window in machine.windows:
-        #         print(window)
+        for machine in solver.machines:
+            print(machine.machine_name)
+            for window in machine.windows:
+                print(window)
+        visualize(solver.machines, lst_jobs, image_name='input_10_2_3_5')
         solver.reset()
         sys.stdout = out
 
