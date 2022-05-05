@@ -5,7 +5,7 @@
 - Huỳnh Tường Nguyên
 - Trang Hồng Sơn
 
-### Studens:
+### Students:
 - Phạm Văn Lĩnh - 2170541
 - Nguyễn Hồng Minh Nhật - 2170552
 - Hồ Trần Nhật Nguyên - 1914371
